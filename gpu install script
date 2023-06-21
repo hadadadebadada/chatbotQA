@@ -1,0 +1,59 @@
+sudo apt update
+sudo apt install python3-pip
+python3 -m pip install --user virtualenv
+apt install python3.8-venv
+python3 -m venv env
+
+pip  install langchain tiktoken chromadb pypdf transformers InstructorEmbedding
+pip  install accelerate bitsandbytes sentencepiece Xformers scipy
+
+
+apt-get install nano
+touch app.py
+
+
+sudo apt install nvidia-cuda-toolkit 
+
+
+####################### bzw. richtige version--> sudo apt-get install cuda-toolkit-12-0 ########
+
+
+
+nvcc --version
+
+wget -q https://www.dropbox.com/s/zoj9rnm7oyeaivb/new_papers.zip
+sudo apt-get update
+sudo apt-get install unzip
+unzip -q new_papers.zip -d new_papers
+
+
+################################CODE##########################################
+import torch
+import transformers
+from transformers import LlamaTokenizer, LlamaForCausalLM, GenerationConfig, pipeline
+
+tokenizer = LlamaTokenizer.from_pretrained("TheBloke/wizardLM-7B-HF")
+
+model = LlamaForCausalLM.from_pretrained("TheBloke/wizardLM-7B-HF",
+                                              load_in_8bit=True,
+                                              device_map='auto',
+                                              torch_dtype=torch.float16,
+                                              low_cpu_mem_usage=True
+                                              )
+                                              
+                                              
+                                              from transformers import pipeline
+
+pipe = pipeline(
+    "text-generation",
+    model=model, 
+    tokenizer=tokenizer, 
+    max_length=1024,
+    temperature=0,
+    top_p=0.95,
+    repetition_penalty=1.15
+)
+
+local_llm = HuggingFacePipeline(pipeline=pipe)
+
+print(local_llm('What is the capital of England?'))

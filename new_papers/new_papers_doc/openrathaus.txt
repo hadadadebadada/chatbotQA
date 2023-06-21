@@ -1,0 +1,37 @@
+
+Zentrale Basisdienste, standardisierte Schnittstellen und Prozess-Baukasten: mit OpenR@thaus die Umsetzung des OZGs erfolgreich gestalten
+
+Digital statt analog, automatisiert statt manuell, Echtzeitauskunft statt 3-Tage-Frist: die Zukunft der Verwaltungsdienstleistungen findet online statt.
+
+Mit dem Onlinezugangsgesetz (OZG) hat die Bundesregierung bereits 2017 den Anstoß zur Erweiterung des Onlineangebotes von Dienstleistungen gegeben. Rahmenbedingungen zum Servicekonto, zum Portalverbund und zur Authentifizierung wurden definiert. Bis Ende 2022 müssen 575 Dienstleistungen von Bund, Ländern, Landkreisen, Städten, Gemeinden und Samtgemeinden digital zur Verfügung stehen.
+
+Standardisierte Dienstleistungen können bereits heute halb- oder vollautomatisch online mit der Portallösung OpenR@thaus angeboten und im Fachverfahren mit wenigen Handgriffen abgeschlossen werden. Sachbearbeiterinnen und Sachbearbeiter werden entlastet, Routinetätigkeiten minimiert – Kapazitäten werden frei für selbstbestimmte Tätigkeiten, für strategische Weiterentwicklung von Standarddienstleistungen.
+
+Die für die Umsetzung des OZGs notwendige Basisinfrastruktur liefert die Portallösung OpenR@thaus der ITEBO-Unternehmensgruppe. Ein zentrales Bürgerkonto, die Anbindung an Paymentdienstleister wie pmPayment, Integration der eID und Anbindung an den Portalverbund des Bundes stehen zentral zur Verfügung. Die Integration eines Formularservers erlaubt darüber hinaus die schnelle Einbindung zahlreicher Prozesse und Dienstleistungen.
+E-Government endlich einfach!
+
+Was ist News & Wissen Digitalisierung und wie ist er untergliedert?
+
+Dies ist der Informationsbereich der ITEBO, um Sie über Themen rund um OZG, Digitalisierung und OpenR@thaus zu informieren. Zugriff auf diesen Bereich haben: Mitarbeitende der ITEBO sowie Projektverantwortliche der Kommunen.
+
+    Blog - Dieser Bereich bietet Nachrichten aus dem Umfeld des Geschäftsbereichs Digitalisierung
+    OZG-Allgemein - Dieser Bereich teilt Wissen zum Thema OZG. Der Schwerpunkt liegt hier primär auf allgemeinen Informationen zum OZG.
+    OpenR@thaus - Dieser Bereich informiert Sie über Services und Modulen im Bereich OpenR@thaus
+    Jira - Dieser Bereich informiert Sie über Jira und wie wir mit Ihnen darüber zusammenarbeiten
+    Seitenaktualisierungen - Sie möchten Wissen, was sich hier in letzter Zeit getan hat? Das verrät Ihnen die Seite "Seitenaktualisierungen"
+
+FAQ
+
+    Was bedeutet das (!) hinter einer Seite?
+        Die Seite befindet sich noch im Aufbau und es sind u. U. noch größere Änderungen zu erwarten. Häufig sind die Informationen nicht vollständig.
+    Ich wünsche mir Informationen zu einer Seite, die noch nicht vorliegt. Was kann ich tun?
+    Wie kann ich einen Fehler melden?
+    Wie erfahre ich, wenn es Änderungen auf einzelnen Seiten gibt?
+        Rufen Sie die Seite auf und klicken Sie oben rechts auf "Beobachten". Sie werden fortan bei Änderungen an dieser Seite per EMail benachrichtigt.
+
+Disclaimer & Information
+
+Alle Seiten wurden nach bestem Wissen und Gewissen erstellt. Irrtümer, unvollständige Angaben und Fehler sind möglich. Bitte sichern Sie sich im Zweifel bei Ihrem ITEBO-Ansprechpartner ab oder führen Sie eine eigene Recherche durch. Insbesondere Informationen zum Thema OZG (Bereich "OZG-Allgemein") sehen wir nicht als rechtlich bindend an.
+
+Die Informationen, die wir Ihnen auf diesen Seiten bereitstellen sind nicht zur Vervielfältigung & Weitergabe vorgesehen!
+

@@ -8,7 +8,7 @@ from langchain.llms import OpenAI
 from langchain.chains import RetrievalQA
 from langchain.document_loaders import PyPDFLoader, DirectoryLoader
 
-os.environ['OPENAI_API_KEY'] = "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"
+os.environ['OPENAI_API_KEY'] = "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"
 
 # Load and process the PDF files
 loader = DirectoryLoader('./openrathaus_pdf/', glob="./*.pdf", loader_cls=PyPDFLoader)

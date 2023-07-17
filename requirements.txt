@@ -1,2 +1,2 @@
-langchai
+langchain
 openai

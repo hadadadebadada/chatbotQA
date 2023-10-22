@@ -1,8 +1,14 @@
-import transformers
-from transformers import GenerationConfig, LlamaTokenizer, LlamaForCausalLM
-from transformers import pipeline
+from transformers import AutoModelForCausalLM
+
+
+
 from langchain.llms import HuggingFacePipeline
+
+
 import torch
+import transformers
+from transformers import AutoTokenizer, AutoModelForCausalLM, GenerationConfig, pipeline
+
 
 ###LANGCHAIN
 import os
@@ -22,73 +28,25 @@ from langchain.embeddings import HuggingFaceInstructEmbeddings
 import textwrap
 
 
+tokenizer = AutoTokenizer.from_pretrained("nomic-ai/gpt4all-j")
 
-def generate_prompt(instruction: str, input_ctxt: str = None) -> str:
-    if input_ctxt:
-        return f"""Below is an instruction that describes a task, paired with an input that provides further context. Write a response that appropriately completes the request.
+model = AutoModelForCausalLM.from_pretrained("nomic-ai/gpt4all-j", revision="v1.2-jazzy")
+              
 
-### Instruction:
-{instruction}
-
-### Input:
-{input_ctxt}
-
-### Response:"""
-    else:
-        return f"""Below is an instruction that describes a task. Write a response that appropriately completes the request.
-
-### Instruction:
-{instruction}
-
-### Response:"""
-
-
-
-#chavinlo/gpt4-x-alpaca
-
-tokenizer = LlamaTokenizer.from_pretrained("chainyo/alpaca-lora-7b")
-model = LlamaForCausalLM.from_pretrained(
-    "chainyo/alpaca-lora-7b",
-    load_in_8bit=True,
-    torch_dtype=torch.float16,
-    device_map="auto",
-)
-generation_config = GenerationConfig(
-    temperature=0.2,
-    top_p=0.75,
-    top_k=40,
-    num_beams=4,
-    max_new_tokens=128,
+pipe = pipeline(
+    "text-generation",
+    model=model, 
+    tokenizer=tokenizer, 
+    max_length=1024,
+    temperature=1,
+    top_p=0.95,
+    repetition_penalty=1.15
 )
 
-model.eval()
-if torch.__version__ >= "2":
-    model = torch.compile(model)
+local_llm = HuggingFacePipeline(pipeline=pipe)
 
-instruction = "What is the meaning of life?"
-input_ctxt = None  # For some tasks, you can provide an input context to help the model generate a better response.
+print(local_llm('What is the capital of England?'))
 
-prompt = generate_prompt(instruction, input_ctxt)
-input_ids = tokenizer(prompt, return_tensors="pt").input_ids
-input_ids = input_ids.to(model.device)
-
-with torch.no_grad():
-    outputs = model.generate(
-        input_ids=input_ids,
-        generation_config=generation_config,
-        return_dict_in_generate=True,
-        output_scores=True,
-    )
-
-response = tokenizer.decode(outputs.sequences[0], skip_special_tokens=True)
-print(response)
-
-
-
-
-
-
-#########################QA################################
 
 
 ##LANGCHAIN
@@ -126,7 +84,7 @@ retriever = vectordb.as_retriever(search_kwargs={"k": 3})
 
 
 # create the chain to answer questions 
-qa_chain = RetrievalQA.from_chain_type(llm=model, 
+qa_chain = RetrievalQA.from_chain_type(llm=local_llm, 
                                   chain_type="stuff", 
                                   retriever=retriever, 
                                   return_source_documents=True)
@@ -157,4 +115,5 @@ def process_llm_response(llm_response):
 
 query = "What is Flash attention?"
 llm_response = qa_chain(query)
+
 process_llm_response(llm_response)

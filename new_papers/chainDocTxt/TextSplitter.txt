@@ -1,0 +1,253 @@
+Split by character
+
+This is the simplest method. This splits based on characters (by default "\n\n") and measure chunk length by number of characters.
+
+    How the text is split: by single character
+    How the chunk size is measured: by number of characters
+
+CharacterTextSplitter
+
+Besides the RecursiveCharacterTextSplitter, there is also the more standard CharacterTextSplitter. This splits only on one type of character (defaults to "\n\n"). You can use it in the exact same way.
+
+import { Document } from "langchain/document";
+import { CharacterTextSplitter } from "langchain/text_splitter";
+
+const text = "foo bar baz 123";
+const splitter = new CharacterTextSplitter({
+  separator: " ",
+  chunkSize: 7,
+  chunkOverlap: 3,
+});
+const output = await splitter.createDocuments([text]);
+
+Contextual chunk headers
+
+Consider a scenario where you want to store a large, arbitrary collection of documents in a vector store and perform Q&A tasks on them. Simply splitting documents with overlapping text may not provide sufficient context for LLMs to determine if multiple chunks are referencing the same information, or how to resolve information from contradictory sources.
+
+Tagging each document with metadata is a solution if you know what to filter against, but you may not know ahead of time exactly what kind of queries your vector store will be expected to handle. Including additional contextual information directly in each chunk in the form of headers can help deal with arbitrary queries.
+
+Here's an example:
+
+import { OpenAI } from "langchain/llms/openai";
+import { RetrievalQAChain, loadQAStuffChain } from "langchain/chains";
+import { CharacterTextSplitter } from "langchain/text_splitter";
+import { OpenAIEmbeddings } from "langchain/embeddings/openai";
+import { HNSWLib } from "langchain/vectorstores/hnswlib";
+
+const splitter = new CharacterTextSplitter({
+  chunkSize: 1536,
+  chunkOverlap: 200,
+});
+
+const jimDocs = await splitter.createDocuments(
+  [`My favorite color is blue.`],
+  [],
+  {
+    chunkHeader: `DOCUMENT NAME: Jim Interview\n\n---\n\n`,
+    appendChunkOverlapHeader: true,
+  }
+);
+
+const pamDocs = await splitter.createDocuments(
+  [`My favorite color is red.`],
+  [],
+  {
+    chunkHeader: `DOCUMENT NAME: Pam Interview\n\n---\n\n`,
+    appendChunkOverlapHeader: true,
+  }
+);
+
+const vectorStore = await HNSWLib.fromDocuments(
+  jimDocs.concat(pamDocs),
+  new OpenAIEmbeddings()
+);
+
+const model = new OpenAI({ temperature: 0 });
+
+const chain = new RetrievalQAChain({
+  combineDocumentsChain: loadQAStuffChain(model),
+  retriever: vectorStore.asRetriever(),
+  returnSourceDocuments: true,
+});
+const res = await chain.call({
+  query: "What is Pam's favorite color?",
+});
+
+console.log(JSON.stringify(res, null, 2));
+
+/*
+  {
+    "text": " Red.",
+    "sourceDocuments": [
+      {
+        "pageContent": "DOCUMENT NAME: Pam Interview\n\n---\n\nMy favorite color is red.",
+        "metadata": {
+          "loc": {
+            "lines": {
+              "from": 1,
+              "to": 1
+            }
+          }
+        }
+      },
+      {
+        "pageContent": "DOCUMENT NAME: Jim Interview\n\n---\n\nMy favorite color is blue.",
+        "metadata": {
+          "loc": {
+            "lines": {
+              "from": 1,
+              "to": 1
+            }
+          }
+        }
+      }
+    ]
+  }
+
+  Custom text splitters
+
+If you want to implement your own custom Text Splitter, you only need to subclass TextSplitter and implement a single method: splitText. The method takes a string and returns a list of strings. The returned strings will be used as the chunks.
+
+abstract class TextSplitter {
+  abstract splitText(text: string): Promise<string[]>;
+}
+
+Recursively split by character
+
+This text splitter is the recommended one for generic text. It is parameterized by a list of characters. It tries to split on them in order until the chunks are small enough. The default list of separators is ["\n\n", "\n", " ", ""]. This has the effect of trying to keep all paragraphs (and then sentences, and then words) together as long as possible, as those would generically seem to be the strongest semantically related pieces of text.
+
+    How the text is split: by list of characters
+    How the chunk size is measured: by number of characters
+
+Important parameters to know here are chunkSize and chunkOverlap. chunkSize controls the max size (in terms of number of characters) of the final documents. chunkOverlap specifies how much overlap there should be between chunks. This is often helpful to make sure that the text isn't split weirdly. In the example below we set these values to be small (for illustration purposes), but in practice they default to 1000 and 200 respectively.
+
+import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
+
+const text = `Hi.\n\nI'm Harrison.\n\nHow? Are? You?\nOkay then f f f f.
+This is a weird text to write, but gotta test the splittingggg some how.\n\n
+Bye!\n\n-H.`;
+const splitter = new RecursiveCharacterTextSplitter({
+  chunkSize: 10,
+  chunkOverlap: 1,
+});
+
+const output = await splitter.createDocuments([text]);
+
+You'll note that in the above example we are splitting a raw text string and getting back a list of documents. We can also split documents directly.
+
+import { Document } from "langchain/document";
+import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
+
+const text = `Hi.\n\nI'm Harrison.\n\nHow? Are? You?\nOkay then f f f f.
+This is a weird text to write, but gotta test the splittingggg some how.\n\n
+Bye!\n\n-H.`;
+const splitter = new RecursiveCharacterTextSplitter({
+  chunkSize: 10,
+  chunkOverlap: 1,
+});
+
+const docOutput = await splitter.splitDocuments([
+  new Document({ pageContent: text }),
+]);
+
+You can customize the RecursiveCharacterTextSplitter with arbitrary separators by passing a separators parameter like this:
+
+import { Document } from "langchain/document";
+import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
+
+const text = `Some other considerations include:
+
+- Do you deploy your backend and frontend together, or separately?
+- Do you deploy your backend co-located with your database, or separately?
+
+**Production Support:** As you move your LangChains into production, we'd love to offer more hands-on support.
+Fill out [this form](https://airtable.com/appwQzlErAS2qiP0L/shrGtGaVBVAz7NcV2) to share more about what you're building, and our team will get in touch.
+
+## Deployment Options
+
+See below for a list of deployment options for your LangChain app. If you don't see your preferred option, please get in touch and we can add it to this list.`;
+
+const splitter = new RecursiveCharacterTextSplitter({
+  chunkSize: 50,
+  chunkOverlap: 1,
+  separators: ["|", "##", ">", "-"],
+});
+
+const docOutput = await splitter.splitDocuments([
+  new Document({ pageContent: text }),
+]);
+
+console.log(docOutput);
+
+/*
+  [
+    Document {
+      pageContent: 'Some other considerations include:',
+      metadata: { loc: [Object] }
+    },
+    Document {
+      pageContent: '- Do you deploy your backend and frontend together',
+      metadata: { loc: [Object] }
+    },
+    Document {
+      pageContent: 'r, or separately?',
+      metadata: { loc: [Object] }
+    },
+    Document {
+      pageContent: '- Do you deploy your backend co',
+      metadata: { loc: [Object] }
+    },
+    Document {
+      pageContent: '-located with your database, or separately?\n\n**Pro',
+      metadata: { loc: [Object] }
+    },
+    Document {
+      pageContent: 'oduction Support:** As you move your LangChains in',
+      metadata: { loc: [Object] }
+    },
+    Document {
+      pageContent: "nto production, we'd love to offer more hands",
+      metadata: { loc: [Object] }
+    },
+    Document {
+      pageContent: '-on support.\nFill out [this form](https://airtable',
+      metadata: { loc: [Object] }
+    },
+    Document {
+      pageContent: 'e.com/appwQzlErAS2qiP0L/shrGtGaVBVAz7NcV2) to shar',
+      metadata: { loc: [Object] }
+    },
+    Document {
+      pageContent: "re more about what you're building, and our team w",
+      metadata: { loc: [Object] }
+    },
+    Document {
+      pageContent: 'will get in touch.',
+      metadata: { loc: [Object] }
+    },
+    Document { pageContent: '#', metadata: { loc: [Object] } },
+    Document {
+      pageContent: '# Deployment Options\n' +
+        '\n' +
+        "See below for a list of deployment options for your LangChain app. If you don't see your preferred option, please get in touch and we can add it to this list.",
+      metadata: { loc: [Object] }
+    }
+  ]
+*/
+
+TokenTextSplitter
+
+Finally, TokenTextSplitter splits a raw text string by first converting the text into BPE tokens, then split these tokens into chunks and convert the tokens within a single chunk back into text.
+
+import { Document } from "langchain/document";
+import { TokenTextSplitter } from "langchain/text_splitter";
+
+const text = "foo bar baz 123";
+
+const splitter = new TokenTextSplitter({
+  encodingName: "gpt2",
+  chunkSize: 10,
+  chunkOverlap: 0,
+});
+
+const output = await splitter.createDocuments([text]);

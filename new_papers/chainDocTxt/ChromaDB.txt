@@ -1,0 +1,240 @@
+Chroma
+
+    Chroma is a AI-native open-source vector database focused on developer productivity and happiness. Chroma is licensed under Apache 2.0.
+
+Discord  License  Integration Tests
+
+    Website
+    Documentation
+    Twitter
+    Discord
+
+Setup
+
+    Run Chroma with Docker on your computer
+
+git clone git@github.com:chroma-core/chroma.git
+docker-compose up -d --build
+
+    Install the Chroma JS SDK.
+
+    npm
+    Yarn
+    pnpm
+
+npm install -S chromadb
+
+Chroma is fully-typed, fully-tested and fully-documented.
+
+Like any other database, you can:
+
+    .add
+    .get
+    .update
+    .upsert
+    .delete
+    .peek
+    and .query runs the similarity search.
+
+View full docs at docs.
+Usage, Index and query Documents
+
+import { Chroma } from "langchain/vectorstores/chroma";
+import { OpenAIEmbeddings } from "langchain/embeddings/openai";
+import { TextLoader } from "langchain/document_loaders/fs/text";
+
+// Create docs with a loader
+const loader = new TextLoader("src/document_loaders/example_data/example.txt");
+const docs = await loader.load();
+
+// Create vector store and index the docs
+const vectorStore = await Chroma.fromDocuments(docs, new OpenAIEmbeddings(), {
+  collectionName: "a-test-collection",
+  url: "http://localhost:8000", // Optional, will default to this value
+  collectionMetadata: {
+    "hnsw:space": "cosine",
+  }, // Optional, can be used to specify the distance method of the embedding space https://docs.trychroma.com/usage-guide#changing-the-distance-function
+});
+
+// Search for the most similar document
+const response = await vectorStore.similaritySearch("hello", 1);
+
+console.log(response);
+/*
+[
+  Document {
+    pageContent: 'Foo\nBar\nBaz\n\n',
+    metadata: { source: 'src/document_loaders/example_data/example.txt' }
+  }
+]
+*/
+
+API Reference:
+
+    Chroma from langchain/vectorstores/chroma
+    OpenAIEmbeddings from langchain/embeddings/openai
+    TextLoader from langchain/document_loaders/fs/text
+
+Usage, Index and query texts
+
+import { Chroma } from "langchain/vectorstores/chroma";
+import { OpenAIEmbeddings } from "langchain/embeddings/openai";
+
+// text sample from Godel, Escher, Bach
+const vectorStore = await Chroma.fromTexts(
+  [
+    `Tortoise: Labyrinth? Labyrinth? Could it Are we in the notorious Little
+        Harmonic Labyrinth of the dreaded Majotaur?`,
+    "Achilles: Yiikes! What is that?",
+    `Tortoise: They say-although I person never believed it myself-that an I
+        Majotaur has created a tiny labyrinth sits in a pit in the middle of
+        it, waiting innocent victims to get lost in its fears complexity.
+        Then, when they wander and dazed into the center, he laughs and
+        laughs at them-so hard, that he laughs them to death!`,
+    "Achilles: Oh, no!",
+    "Tortoise: But it's only a myth. Courage, Achilles.",
+  ],
+  [{ id: 2 }, { id: 1 }, { id: 3 }],
+  new OpenAIEmbeddings(),
+  {
+    collectionName: "godel-escher-bach",
+  }
+);
+
+const response = await vectorStore.similaritySearch("scared", 2);
+
+console.log(response);
+/*
+[
+  Document { pageContent: 'Achilles: Oh, no!', metadata: {} },
+  Document {
+    pageContent: 'Achilles: Yiikes! What is that?',
+    metadata: { id: 1 }
+  }
+]
+*/
+
+// You can also filter by metadata
+const filteredResponse = await vectorStore.similaritySearch("scared", 2, {
+  id: 1,
+});
+
+console.log(filteredResponse);
+/*
+[
+  Document {
+    pageContent: 'Achilles: Yiikes! What is that?',
+    metadata: { id: 1 }
+  }
+]
+*/
+
+API Reference:
+
+    Chroma from langchain/vectorstores/chroma
+    OpenAIEmbeddings from langchain/embeddings/openai
+
+Usage, Query docs from existing collection
+
+import { Chroma } from "langchain/vectorstores/chroma";
+import { OpenAIEmbeddings } from "langchain/embeddings/openai";
+
+const vectorStore = await Chroma.fromExistingCollection(
+  new OpenAIEmbeddings(),
+  { collectionName: "godel-escher-bach" }
+);
+
+const response = await vectorStore.similaritySearch("scared", 2);
+console.log(response);
+/*
+[
+  Document { pageContent: 'Achilles: Oh, no!', metadata: {} },
+  Document {
+    pageContent: 'Achilles: Yiikes! What is that?',
+    metadata: { id: 1 }
+  }
+]
+*/
+
+API Reference:
+
+    Chroma from langchain/vectorstores/chroma
+    OpenAIEmbeddings from langchain/embeddings/openai
+
+Usage, delete docs
+
+import { Chroma } from "langchain/vectorstores/chroma";
+import { OpenAIEmbeddings } from "langchain/embeddings/openai";
+
+const embeddings = new OpenAIEmbeddings();
+const vectorStore = new Chroma(embeddings, {
+  collectionName: "test-deletion",
+});
+
+const documents = [
+  {
+    pageContent: `Tortoise: Labyrinth? Labyrinth? Could it Are we in the notorious Little
+    Harmonic Labyrinth of the dreaded Majotaur?`,
+    metadata: {
+      speaker: "Tortoise",
+    },
+  },
+  {
+    pageContent: "Achilles: Yiikes! What is that?",
+    metadata: {
+      speaker: "Achilles",
+    },
+  },
+  {
+    pageContent: `Tortoise: They say-although I person never believed it myself-that an I
+    Majotaur has created a tiny labyrinth sits in a pit in the middle of
+    it, waiting innocent victims to get lost in its fears complexity.
+    Then, when they wander and dazed into the center, he laughs and
+    laughs at them-so hard, that he laughs them to death!`,
+    metadata: {
+      speaker: "Tortoise",
+    },
+  },
+  {
+    pageContent: "Achilles: Oh, no!",
+    metadata: {
+      speaker: "Achilles",
+    },
+  },
+  {
+    pageContent: "Tortoise: But it's only a myth. Courage, Achilles.",
+    metadata: {
+      speaker: "Tortoise",
+    },
+  },
+];
+
+// Also supports an additional {ids: []} parameter for upsertion
+const ids = await vectorStore.addDocuments(documents);
+
+const response = await vectorStore.similaritySearch("scared", 2);
+console.log(response);
+/*
+[
+  Document { pageContent: 'Achilles: Oh, no!', metadata: {} },
+  Document {
+    pageContent: 'Achilles: Yiikes! What is that?',
+    metadata: { id: 1 }
+  }
+]
+*/
+
+// You can also pass a "filter" parameter instead
+await vectorStore.delete({ ids });
+
+const response2 = await vectorStore.similaritySearch("scared", 2);
+console.log(response2);
+
+/*
+  []
+*/
+
+API Reference:
+
+    Chroma from langchain/vectorstores/chroma
+    OpenAIEmbeddings from langchain/embeddings/openai

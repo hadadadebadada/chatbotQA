@@ -1,0 +1,192 @@
+Caching
+
+Embeddings can be stored or temporarily cached to avoid needing to recompute them.
+
+Caching embeddings can be done using a CacheBackedEmbeddings instance.
+
+The cache backed embedder is a wrapper around an embedder that caches embeddings in a key-value store.
+
+The text is hashed and the hash is used as the key in the cache.
+
+The main supported way to initialized a CacheBackedEmbeddings is the fromBytesStore static method. This takes in the following parameters:
+
+    underlying_embedder: The embedder to use for embedding.
+    document_embedding_cache: The cache to use for storing document embeddings.
+    namespace: (optional, defaults to "") The namespace to use for document cache. This namespace is used to avoid collisions with other caches. For example, set it to the name of the embedding model used.
+
+Attention: Be sure to set the namespace parameter to avoid collisions of the same text embedded using different embeddings models.
+Usage, in-memory
+
+Here's a basic test example with an in memory cache. This type of cache is primarily useful for unit tests or prototyping. Do not use this cache if you need to actually store the embeddings for an extended period of time:
+
+import { OpenAIEmbeddings } from "langchain/embeddings/openai";
+import { CacheBackedEmbeddings } from "langchain/embeddings/cache_backed";
+import { InMemoryStore } from "langchain/storage/in_memory";
+import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
+import { FaissStore } from "langchain/vectorstores/faiss";
+import { TextLoader } from "langchain/document_loaders/fs/text";
+
+const underlyingEmbeddings = new OpenAIEmbeddings();
+
+const inMemoryStore = new InMemoryStore();
+
+const cacheBackedEmbeddings = CacheBackedEmbeddings.fromBytesStore(
+  underlyingEmbeddings,
+  inMemoryStore,
+  {
+    namespace: underlyingEmbeddings.modelName,
+  }
+);
+
+const loader = new TextLoader("./state_of_the_union.txt");
+const rawDocuments = await loader.load();
+const splitter = new RecursiveCharacterTextSplitter({
+  chunkSize: 1000,
+  chunkOverlap: 0,
+});
+const documents = await splitter.splitDocuments(rawDocuments);
+
+// No keys logged yet since the cache is empty
+for await (const key of inMemoryStore.yieldKeys()) {
+  console.log(key);
+}
+
+let time = Date.now();
+const vectorstore = await FaissStore.fromDocuments(
+  documents,
+  cacheBackedEmbeddings
+);
+console.log(`Initial creation time: ${Date.now() - time}ms`);
+/*
+  Initial creation time: 1905ms
+*/
+
+// The second time is much faster since the embeddings for the input docs have already been added to the cache
+time = Date.now();
+const vectorstore2 = await FaissStore.fromDocuments(
+  documents,
+  cacheBackedEmbeddings
+);
+console.log(`Cached creation time: ${Date.now() - time}ms`);
+/*
+  Cached creation time: 8ms
+*/
+
+// Many keys logged with hashed values
+const keys = [];
+for await (const key of inMemoryStore.yieldKeys()) {
+  keys.push(key);
+}
+
+console.log(keys.slice(0, 5));
+/*
+  [
+    'text-embedding-ada-002ea9b59e760e64bec6ee9097b5a06b0d91cb3ab64',
+    'text-embedding-ada-0023b424f5ed1271a6f5601add17c1b58b7c992772e',
+    'text-embedding-ada-002fec5d021611e1527297c5e8f485876ea82dcb111',
+    'text-embedding-ada-00262f72e0c2d711c6b861714ee624b28af639fdb13',
+    'text-embedding-ada-00262d58882330038a4e6e25ea69a938f4391541874'
+  ]
+*/
+
+API Reference:
+
+    OpenAIEmbeddings from langchain/embeddings/openai
+    CacheBackedEmbeddings from langchain/embeddings/cache_backed
+    InMemoryStore from langchain/storage/in_memory
+    RecursiveCharacterTextSplitter from langchain/text_splitter
+    FaissStore from langchain/vectorstores/faiss
+    TextLoader from langchain/document_loaders/fs/text
+
+Usage, Redis
+
+Here's an example with a Redis cache.
+
+You'll first need to install ioredis as a peer dependency and pass in an initialized client:
+
+    npm
+    Yarn
+    pnpm
+
+npm install ioredis
+
+import { Redis } from "ioredis";
+
+import { OpenAIEmbeddings } from "langchain/embeddings/openai";
+import { CacheBackedEmbeddings } from "langchain/embeddings/cache_backed";
+import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
+import { FaissStore } from "langchain/vectorstores/faiss";
+import { TextLoader } from "langchain/document_loaders/fs/text";
+import { RedisByteStore } from "langchain/storage/ioredis";
+
+const underlyingEmbeddings = new OpenAIEmbeddings();
+
+// Requires a Redis instance running at http://localhost:6379.
+// See https://github.com/redis/ioredis for full config options.
+const redisClient = new Redis();
+const redisStore = new RedisByteStore({
+  client: redisClient,
+});
+
+const cacheBackedEmbeddings = CacheBackedEmbeddings.fromBytesStore(
+  underlyingEmbeddings,
+  redisStore,
+  {
+    namespace: underlyingEmbeddings.modelName,
+  }
+);
+
+const loader = new TextLoader("./state_of_the_union.txt");
+const rawDocuments = await loader.load();
+const splitter = new RecursiveCharacterTextSplitter({
+  chunkSize: 1000,
+  chunkOverlap: 0,
+});
+const documents = await splitter.splitDocuments(rawDocuments);
+
+let time = Date.now();
+const vectorstore = await FaissStore.fromDocuments(
+  documents,
+  cacheBackedEmbeddings
+);
+console.log(`Initial creation time: ${Date.now() - time}ms`);
+/*
+  Initial creation time: 1808ms
+*/
+
+// The second time is much faster since the embeddings for the input docs have already been added to the cache
+time = Date.now();
+const vectorstore2 = await FaissStore.fromDocuments(
+  documents,
+  cacheBackedEmbeddings
+);
+console.log(`Cached creation time: ${Date.now() - time}ms`);
+/*
+  Cached creation time: 33ms
+*/
+
+// Many keys logged with hashed values
+const keys = [];
+for await (const key of redisStore.yieldKeys()) {
+  keys.push(key);
+}
+
+console.log(keys.slice(0, 5));
+/*
+  [
+    'text-embedding-ada-002fa9ac80e1bf226b7b4dfc03ea743289a65a727b2',
+    'text-embedding-ada-0027dbf9c4b36e12fe1768300f145f4640342daaf22',
+    'text-embedding-ada-002ea9b59e760e64bec6ee9097b5a06b0d91cb3ab64',
+    'text-embedding-ada-002fec5d021611e1527297c5e8f485876ea82dcb111',
+    'text-embedding-ada-002c00f818c345da13fed9f2697b4b689338143c8c7'
+  ]
+*/
+
+API Reference:
+
+    OpenAIEmbeddings from langchain/embeddings/openai
+    CacheBackedEmbeddings from langchain/embeddings/cache_backed
+    RecursiveCharacterTextSplitter from langchain/text_splitter
+    FaissStore from langchain/vectorstores/faiss
+    TextLoader from langchain/document_loaders/fs/text
+    RedisByteStore from langchain/storage/ioredis

@@ -1,0 +1,20 @@
+# Ignore bin folder
+/bin/
+
+# Ignore db folder
+/db/
+
+# Ignore etc folder
+/etc/
+
+# Ignore include folder
+/include/
+
+# Ignore lib folder
+/lib/
+
+# Ignore lib64 folder
+/lib64/
+
+# Ignore share folder
+/share/

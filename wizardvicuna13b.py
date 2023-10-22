@@ -71,7 +71,8 @@ local_llm = HuggingFacePipeline(pipeline=pipe)
 
 # Load and process the text files
 # loader = TextLoader('single_text_file.txt')
-loader = DirectoryLoader('./new_papers/openrathaus_pdf/', glob="./*.pdf", loader_cls=PyPDFLoader)
+#loader = DirectoryLoader('./new_papers/openrathaus_pdf/', glob="./*.pdf", loader_cls=PyPDFLoader)
+loader = DirectoryLoader('./new_papers/chainDocTxt/', glob="./*.txt", loader_cls=TextLoader)
 
 documents = loader.load()
 len(documents)
@@ -131,7 +132,7 @@ def process_llm_response(llm_response):
 
 
 
-query = "Was ist XÖV? ONLY ANSWER IN GERMAN LANGUAGE"
+query = "What is a VectorStoreRetrieverMemory?"
 llm_response = qa_chain(query)
 process_llm_response(llm_response)
 
